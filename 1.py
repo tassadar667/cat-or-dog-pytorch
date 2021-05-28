@@ -1,10 +1,10 @@
-import imageio
 import matplotlib.pyplot as plt
 import torch
-from torch import nn, optim
-import os
+from torch import nn
 import torchvision.datasets as dset
 from torchvision import transforms
+import numpy as np
+import time
 
 
 class AlexNet(nn.Module):
@@ -40,7 +40,6 @@ class AlexNet(nn.Module):
         return x
 
 
-
 def ac_rate(test_dataloader, net, device):
     total = 0
     ac = 0
@@ -65,47 +64,42 @@ def main():
 
     dataset = dset.ImageFolder("./training_set", transform=transform)
     testset = dset.ImageFolder("./test_set", transform=transform)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    net = AlexNet().to(device)
-
     batch_size = 256
-    lr= 0.0001
-
-    trainloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=8)
+    lr = 0.0001
+    net = AlexNet().to(device)
+    trainloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=12)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=12)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
 
-    train_losses = []
-    train_counter = []
-    test_losses = []
-    print("start_training")
-    for epoch in range(10):  # loop over the dataset multiple times
-        ac_rate(testloader, net, device)
-        running_loss = 0.0
+    print("start training")
+    t0 = time.time()
+    for epoch in range(100):
+        running_loss = []
+        t1 = time.time()
         for i, data in enumerate(trainloader, 0):
-            # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
-            # zero the parameter gradients
             optimizer.zero_grad()
-
-            # forward + backward + optimize
             outputs = net(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-
-            # print statistics
-            running_loss += loss.item()
-            if i % 20 == 19:  # print every 200 mini-batches
-                print('[%d, %5d] loss: %.8f' %
-                      (epoch + 1, i + 1, running_loss / 200))
-
-                running_loss = 0.0
-
+            running_loss.append(loss.item())
+            loss_seq.append(loss.item())
+        t2 = time.time()
+        t = t2 - t1
+        print('epoch:%d  loss: %.8f  time:%.2fs' % (epoch + 1, np.mean(running_loss), t))
+        ac = ac_rate(testloader, net, device)
+        ac_seq.append(ac)
     print('Finished Training')
+    t = time.time() - t0
+    print("total time:%.1fs" % t)
 
 
+loss_seq = []
+ac_seq = []
 if __name__ == '__main__':
     main()
