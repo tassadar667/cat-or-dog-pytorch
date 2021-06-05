@@ -1,8 +1,12 @@
 # **基于Alexnet的猫狗大战**
 
+李俊然
+
+18377198
+
 ## **数据来源**
 
-数据来自于[kaggle](https://www.kaggle.com/tongpython/cat-and-dog)，网址为https://www.kaggle.com/tongpython/cat-and-dog。测试集包含4000张猫、4005张狗，测试集包含了1011张猫、1012张狗。部分图片如下。
+数据来自于[kaggle](https://www.kaggle.com/tongpython/cat-and-dog)，网址为[https://www.kaggle.com/tongpython/cat-and-dog](https://www.kaggle.com/tongpython/cat-and-dog)。测试集包含4000张猫、4005张狗，测试集包含了1011张猫、1012张狗。部分图片如下。
 
 ![cat](1.png)
 
@@ -14,14 +18,18 @@
 
 网络利用python中pytorch建立，更改分类数为2，网络输出为二维tensor。
 
+
 ```python
 class AlexNet(nn.Module):
     def __init__(self, num_classes=2):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
+            # 卷积核为11*11*3（RGB三个通道），步长为4，边缘补两个0，输出维度为64
             nn.ReLU(inplace=True),
+            # 激活函数为ReLU
             nn.MaxPool2d(kernel_size=3, stride=2),
+            # 最大值池化
             nn.Conv2d(64, 192, kernel_size=5, padding=2),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
@@ -53,6 +61,7 @@ class AlexNet(nn.Module):
 ### **数据预处理**
 
 由于图片尺寸不一致，因此先将图片较短的一边缩放到224像素，再居中裁剪形成224\*224\*3，最后进行归一化，便于训练。同时数据集已经按照文件夹分类，直接使用ImageFolder载入数据。
+
 ```python
 transform = transforms.Compose([
         transforms.Resize(224),
@@ -64,9 +73,11 @@ transform = transforms.Compose([
 dataset = dset.ImageFolder("./training_set", transform=transform)
 testset = dset.ImageFolder("./test_set", transform=transform)
 ```
+
+
 ### **建立网络并设置参数**
 
-batch_size设置较大，加快收敛速度，多线程读取加速IO，学习率设置为0.0001。
+batch_size设置较大，加快收敛速度，多线程读取加速I/O，学习率设置为0.0001。
 
 ```python
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -74,10 +85,13 @@ batch_size = 256
 lr= 0.0001
 net = AlexNet().to(device)
 trainloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=12)
+# 训练集需要打乱顺序
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=12)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=lr)
 ```
+
+
 ### **开始训练**
 
 ```python
@@ -105,6 +119,7 @@ for epoch in range(100):
 ## **训练结果**
 
 下面是训练过程中部分输出（删去了中间部分）
+
 ```
 start training
 epoch:1  loss: 0.68571441  time:25.09s
@@ -195,8 +210,8 @@ def main():
     transform = transforms.Compose([
         transforms.Resize(224),  # 缩放图片，保持长宽比不变，最短边的长为224像素,
         transforms.CenterCrop(224),  # 从中间切出 224*224的图片
-        transforms.ToTensor(),  # 将图片转换为Tensor,归一化至[0,1]
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # 标准化至[-1,1]
+        transforms.ToTensor(),  # 将图片转换为Tensor
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
     ])
 
     dataset = dset.ImageFolder("./training_set", transform=transform)
@@ -241,3 +256,4 @@ ac_seq = []
 if __name__ == '__main__':
     main()
 ```
+
